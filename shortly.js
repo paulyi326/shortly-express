@@ -11,6 +11,16 @@ var Click = require('./app/models/click');
 var bcrypt = require('bcrypt-nodejs');
 
 var app = express();
+app.use(express.cookieParser('secret'));
+app.use(express.session());
+
+var restrict = function(req, res, next){
+  if(req.session.user){
+    next();
+  } else {
+    res.redirect('/login');
+  }
+};
 
 app.configure(function() {
   app.set('views', __dirname + '/views');
@@ -59,8 +69,12 @@ app.post('/login', function(req, res) {
       var loginPwd = bcrypt.hashSync(password,salt);
 
       if(loginPwd === found.attributes.password){
-        res.redirect('/');
+        req.session.regenerate(function() {
+          req.session.user = username;
+          res.redirect('/');
+        });
       } else {
+        res.redirect('/login');
         console.log("Incorrect Password");
       }
     } else {
@@ -69,7 +83,8 @@ app.post('/login', function(req, res) {
   });
 });
 
-app.get('/', function(req, res) {
+app.get('/', restrict, function(req, res) {
+  console.log("User session active and logged in");
   res.render('index');
 });
 
@@ -120,7 +135,13 @@ app.post('/links', function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
-
+app.get('/logout',function(req,res){
+  setTimeout(function(){
+      req.session.destroy(function(){
+        res.redirect('/');
+      });
+    },100);
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail

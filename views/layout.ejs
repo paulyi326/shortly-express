@@ -15,6 +15,15 @@
 
   <body>
     <h1>Shortly</h1>
+    <button id="logout">Logout</button>
+    <script>
+    $('document').ready(function(){
+      $('#logout').on('click',function(){
+        console.log("Logout CLicked");
+        $(location).attr('href','http://localhost:4568/logout');
+      });
+    });
+    </script>
     <%- body %>
   </body>
 </html>
