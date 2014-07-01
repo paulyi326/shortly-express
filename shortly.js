@@ -8,6 +8,7 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var bcrypt = require('bcrypt-nodejs');
 
 var app = express();
 
@@ -17,6 +18,55 @@ app.configure(function() {
   app.use(partials());
   app.use(express.bodyParser())
   app.use(express.static(__dirname + '/public'));
+});
+
+app.get('/signup',function(req,res){
+  res.render('signup');
+});
+
+app.get('/login',function(req,res){
+  res.render('login');
+});
+
+app.post('/signup',function(req,res){
+
+  var uname = req.body.username;
+  var pwd = req.body.password;
+
+  new User({username: uname}).fetch().then(function(found){
+    if(found) {
+      console.log("User already has signed up, redirecting");
+      res.redirect('/login');
+    } else {
+      User.forge({username: uname, password: pwd}).save().then(function(newUser){
+        Users.add(newUser);
+        res.send(200, newUser);
+      });
+    }
+  });
+});
+
+app.post('/login', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+
+
+  new User({username: username}).fetch().then(function(found) {
+    if (found) {
+      console.log("Login Credentials exist");
+
+      var salt = found.attributes.salt;
+      var loginPwd = bcrypt.hashSync(password,salt);
+
+      if(loginPwd === found.attributes.password){
+        res.redirect('/');
+      } else {
+        console.log("Incorrect Password");
+      }
+    } else {
+      console.log("User not found");
+    }
+  });
 });
 
 app.get('/', function(req, res) {
@@ -30,7 +80,7 @@ app.get('/create', function(req, res) {
 app.get('/links', function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
-  })
+  });
 });
 
 app.post('/links', function(req, res) {
